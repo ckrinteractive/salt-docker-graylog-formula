@@ -2,7 +2,7 @@
 {% set container_name = 'graylog' %}
 {% set web_host_port = salt['pillar.get']('graylog:web_port', '8080') %}
 {% set input_host_port = salt['pillar.get']('graylog:input_port', '12201') %}
-{% set host = salt['pillar.get']('graylog:host') %}
+{% set bind_ip = salt['pillar.get']('graylog:bind_ip') %}
 {% set env_vars = {
   'GRAYLOG_PASSWORD':	salt['pillar.get']('graylog:password', ''),
   'GRAYLOG_USERNAME':	salt['pillar.get']('graylog:username', 'admin'),
@@ -70,9 +70,9 @@
       {% endfor %}
     - ports:
         - "9000/tcp":
-            HostIp: {{ host }}
+            HostIp: {{ bind_ip }}
             HostPort: {{ web_host_port }}
         - "12201/udp":
-            HostIp: {{ host }}
+            HostIp: {{ bind_ip }}
             HostPort: {{ input_host_port }}
     - order: 121
