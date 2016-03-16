@@ -1,7 +1,8 @@
 {% set image_name = 'graylog2/allinone' %}
 {% set container_name = 'graylog' %}
-{% set web_host_port = salt['pillar.get']('graylog:web_port', '8080') %}
-{% set input_host_port = salt['pillar.get']('graylog:input_port', '12201') %}
+{% set web_host_port = salt['pillar.get']('graylog:web_port', '9000') %}
+{% set gelf_input_port = salt['pillar.get']('graylog:gelf_input_port', '12201') %}
+{% set syslog_input_port = salt['pillar.get']('graylog:syslog_input_port', '514') %}
 {% set bind_ip = salt['pillar.get']('graylog:bind_ip') %}
 {% set env_vars = {
   'GRAYLOG_PASSWORD':	salt['pillar.get']('graylog:password', ''),
@@ -74,5 +75,8 @@
             HostPort: {{ web_host_port }}
         - "12201/udp":
             HostIp: {{ bind_ip }}
-            HostPort: {{ input_host_port }}
+            HostPort: {{ gelf_input_port }}
+        - "514/udp":
+            HostIp: {{ bind_ip }}
+            HostPort: {{ syslog_input_port }}
     - order: 121
