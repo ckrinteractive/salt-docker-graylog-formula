@@ -1,7 +1,6 @@
 graylog:
   host: localhost
   web_port: 8080
-  input_port: 12201
   data_dir: /graylog-data
   es_memory: 4g
   password: password
@@ -10,3 +9,5 @@ graylog:
   smtp_server: server.example.com
   retention: --time=24 --indices=30
   secret: secret
+  syslog_input_port: 514
+  gelf_input_port: 12201
