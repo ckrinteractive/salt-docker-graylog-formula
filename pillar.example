@@ -1,5 +1,4 @@
 graylog:
-  host: localhost
   web_port: 8080
   data_dir: /graylog-data
   es_memory: 4g
