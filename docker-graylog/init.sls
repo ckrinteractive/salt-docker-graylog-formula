@@ -3,7 +3,7 @@
 {% set web_host_port = salt['pillar.get']('graylog:web_port', '9000') %}
 {% set gelf_input_port = salt['pillar.get']('graylog:gelf_input_port', '12201') %}
 {% set syslog_input_port = salt['pillar.get']('graylog:syslog_input_port', '514') %}
-{% set bind_ip = salt['pillar.get']('graylog:bind_ip') %}
+{% set host_ip = salt['grains.get']('ip4_interfaces:eth0:0') %}
 {% set env_vars = {
   'GRAYLOG_PASSWORD':	salt['pillar.get']('graylog:password', ''),
   'GRAYLOG_USERNAME':	salt['pillar.get']('graylog:username', 'admin'),
@@ -18,65 +18,26 @@
 } %}
 
 
-{{ image_name }}-pulled:
-  docker.pulled:
-     - name: {{ image_name }}
+{{ image_name }}:
+  dockerng.image_present:
      - force: True
-     - order: 100
 
-{{ container_name }}-stop-if-old:
-  cmd.run:
-    - name: docker stop {{ container_name }}
-    - unless: docker inspect --format "\{\{ .Image \}\}" {{ container_name }} | grep $(docker images | grep "{{ image_name }}" | awk '{ print $3 }')
-    - require:
-      - docker: {{ image_name }}-pulled
-    - order: 111
-
-{{ container_name }}-remove-if-old:
-  cmd.run:
-    - name: docker rm {{ container_name }}
-    - unless: docker inspect --format "\{\{ .Image \}\}" {{ container_name }} | grep $(docker images | grep "{{ image_name }}" | awk '{ print $3 }')
-    - require:
-      - cmd: {{ container_name }}-stop-if-old
-    - order: 112
-
-{{ image_name }}-container:
+{{ container_name }}:
   require:
-    - docker: {{ image_name }}-pulled
+    - dockerng: {{ image_name }}
   docker.installed:
     - name: {{ container_name }}
     - image: {{ image_name }}
     - environment:
       {% for env_var, env_val in env_vars.items() -%}
-        - {{ env_var }}: {{ env_val }}
+        - {{ env_var }}: "{{ env_val }}"
       {% endfor %}
-    - volumes:
+    - binds:
       {% for c_path, h_path in volume_map.items() %}
       - "{{ h_path }}:{{ c_path }}"
       {% endfor %}
-    - order: 120
-
-{{ container_name }}:
-  require:
-    - docker: {{ image_name }}-container
-  docker.running:
-    - container: {{ container_name }}
-    - image: {{ image_name }}
+    - port_bindings:
+      - {{ host_ip }}:{{ web_host_port }}:9000/tcp
+      - {{ host_ip }}:{{ gelf_input_port }}:12201/udp
+      - {{ host_ip }}:{{ syslog_input_port }}:514/udp
     - restart_policy: always
-    - volumes:
-      {% for c_path, h_path in volume_map.items() %}
-        {{ h_path }}:
-            bind: {{ c_path }}
-            ro: False
-      {% endfor %}
-    - ports:
-        - "9000/tcp":
-            HostIp: {{ bind_ip }}
-            HostPort: {{ web_host_port }}
-        - "12201/udp":
-            HostIp: {{ bind_ip }}
-            HostPort: {{ gelf_input_port }}
-        - "514/udp":
-            HostIp: {{ bind_ip }}
-            HostPort: {{ syslog_input_port }}
-    - order: 121
